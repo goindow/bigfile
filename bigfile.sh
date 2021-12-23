@@ -34,7 +34,7 @@ EOF
 
 function usage_shard() {
   cat << 'EOF'
-Usage: bigfile shard [-b byte_count<k|m>] [-d shard_dir] [-l line_count] [-p shard_prefix] 
+Usage: bigfile shard [-b byte_count<(b)|k|m>] [-d shard_dir] [-l line_count] [-p shard_prefix] 
                      [-s shard_suffix_length] [-t] source
 
   Sharding the file according to the specified rules
