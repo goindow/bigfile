@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# 合并分片文件名
-mergefile=source
-# md5 数字签名文件名
-md5file=md5
+# 数字签名文件名，第一行为源文件的 md5，余下的是每个分片的 md5
+md5_file_name=md5
+# 合并分片文件名，source 的 md5 等于源文件 md5（用来校验合并分片后文件的完整性）
+merge_file_name=source
 
 # -t，二进制文件分片前是否打包压缩，只有 -b 二进制文件分片才支持 -t 参数
 tar=false
@@ -22,7 +22,7 @@ function usage() {
   cat << 'EOF'
 Usage: bigfile COMMAND [ARGS...]
   
-  big file splitting and merging tool
+  big file sharding and merging tool
 
 Commands:
   shard                     Split a big file into shards
@@ -33,17 +33,36 @@ EOF
 }
 
 function usage_shard() {
-  echo 'shard helps'
+  cat << 'EOF'
+Usage: bigfile shard [-b byte_count<k|m>] [-d shard_dir] [-l line_count] [-p shard_prefix] 
+                     [-s shard_suffix_length] [-t] source
+
+  Sharding the file according to the specified rules
+
+Options:
+  -b            Sharding by byte_count bytes(default unit "b", only be <(b)|k|m>)
+  -d            Shards storage directory(default "./")
+  -l            Sharding by line_count lines(default "1000")
+  -p            Shard file prefix(default "shard_", like shard_aa, shard_ab...)
+  -s            Shard file suffix length(default 2)
+  -t            Specify whether compression is required before sharding(default uncompressed)
+EOF
 }
 
 function usage_merge() {
-  echo 'merge helps'
+  cat << 'EOF'
+Usage: bigfile merge md5_file
+
+  Merge Shards. verify the signatures of all shards according to the md5 file. 
+  if the verification fails, write the failed shards to the "md5.failed" file.
+
+EOF
 }
 
 function dialog() {
   case $1 in
     fatal) printf '%s\n' "$2" && exit 1;;
-    error) printf '%s\n\n%s\n' "$2" 'For more details, see "bigfile help".' && exit 1;;
+    error) printf '%s\n\n%s\n' "$2" "For more details, see \"${3:-'bigfile help'}\"." && exit 1;;
     info)  printf '%s\n' "$2";;
     ok)    echo 'OK.';;
     exit)  echo 'exited.';;
@@ -57,7 +76,7 @@ function help() {
 }
 
 function opts() {
-  while getopts 'b:d:l:p:s:t' options; do
+  while getopts 'b:d:l:m:p:s:t' options; do
     case $options in
       b) shard_byte_count=$OPTARG;;
       d) shard_dir=${OPTARG/%\//};;
@@ -70,26 +89,25 @@ function opts() {
   return $(($OPTIND - 1))
 }
 
-# md5 签名
 function md5sign() {
-  # 源文件 md5
-  printf '%s %s\n' $(md5sum $1 | cut -b 1-32) 'source' > $shard_dir/$md5file
-  # 分片 md5
+  # 源文件
+  printf '%s %s\n' $(md5sum $1 | cut -b 1-32) $merge_file_name > $shard_dir/$md5_file_name
+  # 分片
   for s in $(ls $shard_dir/$shard_prefix*); do
-    printf '%s %s\n' $(md5sum $s | cut -b 1-32) $(basename $s) >> $shard_dir/$md5file
+    printf '%s %s\n' $(md5sum $s | cut -b 1-32) $(basename $s) >> $shard_dir/$md5_file_name
   done
 }
 
 # 文件分片
-# bigfile shard [-t] [-b byte_count<k|m>] [-l line_count] [-d shard_dir] [-p shard_prefix] [-s shard_suffix_length] source
+# bigfile shard [-b byte_count<k|m>] [-d shard_dir] [-l line_count] [-p shard_prefix] [-s shard_suffix_length] [-t] source
 function shard() {
   opts $@ || shift $?
   # 源文件
   test -z $1 && dialog error 'Requires a source file as the argement.'
-  test -e $1 && source=$1 || dialog error "No such file."
+  test -e $1 && source=$1 || dialog error "$1, no such file."
   # 分片文件目录
   if test -d $shard_dir; then
-    rm -rf $shard_dir/$mergefile && rm -rf $shard_dir/$shard_prefix*
+    rm -rf $shard_dir/$merge_file_name && rm -rf $shard_dir/$shard_prefix*
   else
     mkdir -p $shard_dir || dialog error 'No permission, failed to create shard directory.'
   fi
@@ -110,13 +128,24 @@ function shard() {
     split -l $shard_line_count -a $shard_suffix_length $source $shard_dir/$shard_prefix
   fi
   # md5 签名
-  test $? -eq 0 && md5sign $source
+  test $? -eq 0 && md5sign $source && dialog ok
 }
 
-
 # 文件合并
+# bigfile merge md5_file
 function merge() {
-  echo 'merge'
+  # md5 文件
+  test -z $1 && dialog error 'Requires a md5 file as the argement.'
+  test -e $1 && md5_file=$1 || dialog error "$1: no such file."
+  # 源文件信息
+  merge_file_name=$(head -n 1 $md5_file | cut -d ' ' -f 2)
+  # 分片信息
+  shards=$(cat $md5_file | grep -v $merge_file_name | cut -d ' ' -f 2 | tr '\n' ' ')
+  # 合并
+  cd $(dirname $md5_file) && cat $shards > $merge_file_name || exit 1
+  # 校验签名
+  md5sum -c $(basename $md5_file) | grep -v "$merge_file_name: " | grep -v ': OK' | grep -v ": WARNING" | cut -d ':' -f 1 > md5.failed
+  test -z $(cat md5.failed) && dialog ok || dialog error 'Signature verification failed.' 'cat md5.failed'
 }
 
 # main
