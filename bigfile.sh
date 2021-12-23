@@ -145,7 +145,9 @@ function merge() {
   cd $(dirname $md5_file) && cat $shards > $merge_file_name || dialog fatal 'Merge failed.'
   # 校验签名
   md5sum -c $(basename $md5_file) | grep -v "$merge_file_name: " | grep -v ': OK' | grep -v ": WARNING" | cut -d ':' -f 1 > md5.failed
-  test -z $(cat md5.failed) && dialog ok || dialog error 'Signature verification failed.' 'cat md5.failed'
+  # 计算结果
+  test ! -z $(cat md5.failed) && rm -rf $merge_file_name && dialog error 'Signature verification failed.' 'cat md5.failed'
+  dialog ok
 }
 
 # main
