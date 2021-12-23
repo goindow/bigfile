@@ -9,6 +9,12 @@
 - 文件分片
 - 分片合并
 
+## Examples
+- [文本文件](https://github.com/goindow/bigfile/tree/main/example/demo/text_file_sharding)
+- [二进制文件](https://github.com/goindow/bigfile/tree/main/example/demo/binary_file_sharding)
+- [分片前打包压缩](https://github.com/goindow/bigfile/tree/main/example/demo/sharding_after_compressed)
+- [分片合并验签失败](https://github.com/goindow/bigfile/tree/main/example/demo/merge_failed)
+
 ## 使用说明
 ```shell
 Usage: bigfile COMMAND [ARGS...]
