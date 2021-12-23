@@ -22,7 +22,7 @@ function usage() {
   cat << 'EOF'
 Usage: bigfile COMMAND [ARGS...]
   
-  big file sharding and merging tool
+  Big file sharding and merging tool
 
 Commands:
   shard                     Split a big file into shards
