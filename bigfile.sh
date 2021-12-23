@@ -25,8 +25,8 @@ Usage: bigfile COMMAND [ARGS...]
   Big file sharding and merging tool
 
 Commands:
-  shard                     Split a big file into shards
-  merge                     Merge shards to a big file
+  shard                     Big file sharding
+  merge                     Merge shards
 
 Run 'bigfile help COMMAND' for more details on a command.
 EOF
