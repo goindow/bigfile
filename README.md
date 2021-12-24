@@ -60,4 +60,4 @@ Usage: bigfile merge md5_file
 - [分片前打包压缩](https://github.com/goindow/bigfile/tree/main/example/demo/sharding_after_compressed)
 - [分片合并验签失败](https://github.com/goindow/bigfile/tree/main/example/demo/merge_failed)
 - [FTP数据交换](https://github.com/goindow/bigfile/tree/main/example/demo/push_ftp_pull)
-![FTP数据交换](https://hub.fastgit.org/goindow/bigfile/blob/main/example/demo/push_ftp_pull/push_ftp_pull.png)
+![FTP数据交换](https://github.com/goindow/bigfile/blob/main/example/demo/push_ftp_pull/push_ftp_pull.png)
